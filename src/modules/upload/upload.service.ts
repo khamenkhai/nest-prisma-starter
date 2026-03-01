@@ -1,4 +1,5 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { S3Client } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
@@ -17,13 +18,24 @@ export class UploadService {
         });
     }
 
-    async uploadFile(fileName: string, file: Buffer) {
-        await this.s3client.send(
-            new PutObjectCommand({
-                Bucket: 'nest-applications',
-                Key: fileName,
+    async uploadFile(fileName: string, file: Buffer | Uint8Array | ReadableStream, contentType: string): Promise<string> {
+
+        const bucket = this.configService.getOrThrow('AWS_S3_BUCKET');
+        const region = this.configService.getOrThrow('AWS_S3_REGION');
+        const key = `nest-starter/${fileName}`;
+
+        const upload = new Upload({
+            client: this.s3client,
+            params: {
+                Bucket: bucket,
+                Key: key,
                 Body: file,
-            })
-        );
+                ContentType: contentType,
+            },
+        });
+
+        await upload.done();
+
+        return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
     }
 }

@@ -8,7 +8,7 @@ export enum StorageType {
     CLOUD = 'CLOUD',
 }
 
-export const ACTIVE_STORAGE_TYPE = StorageType.LOCAL;
+export const ACTIVE_STORAGE_TYPE = StorageType.CLOUD;
 
 // Helper for local disk configuration
 const diskStorageConfig = diskStorage({
@@ -20,24 +20,13 @@ const diskStorageConfig = diskStorage({
         cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-
-        const fileExt = file.originalname.split('.').pop();
-        const nameWithoutExt = file.originalname.split('.').slice(0, -1).join('.');
-
-        const sanitizedName = nameWithoutExt
-            .replace(/[^a-zA-Z0-9]/g, '_')
-            .replace(/_{2,}/g, '_');
-
-        cb(null, `${uniqueSuffix}-${sanitizedName}.${fileExt}`);
+        cb(null, sanitizeFileName(file.originalname));
     },
 });
 
 export const multerOptions: MulterOptions = {
     // Toggle storage engine based on your Enum
-    storage: ACTIVE_STORAGE_TYPE === StorageType.LOCAL
-        ? diskStorageConfig
-        : memoryStorage(),
+    storage: ACTIVE_STORAGE_TYPE === StorageType.CLOUD ? memoryStorage() : diskStorageConfig,
 
     fileFilter: (req, file, cb) => {
         const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
@@ -48,6 +37,21 @@ export const multerOptions: MulterOptions = {
         }
     },
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5 MB
+        fileSize: 10 * 1024 * 1024, // 10 MB
     },
 };
+
+
+export const sanitizeFileName = (originalName: string): string => {
+    const fileExt = originalName.split('.').pop();
+    const nameWithoutExt = originalName.split('.').slice(0, -1).join('.');
+
+    const sanitizedName = nameWithoutExt
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .replace(/_{2,}/g, '_');
+
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+
+    return `${uniqueSuffix}-${sanitizedName}.${fileExt}`;
+};
+

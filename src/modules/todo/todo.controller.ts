@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Version, UseInterceptors, UploadedFile, ParseFilePipe, FileTypeValidator, MaxFileSizeValidator } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Version, UseInterceptors, UploadedFile, ParseFilePipe, FileTypeValidator, MaxFileSizeValidator, BadRequestException } from '@nestjs/common';
+import * as fs from 'fs';
 import { ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { TodoService } from './todo.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -10,7 +11,7 @@ import { UserRole } from '../users/entity/user.entity';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { ApiResponse } from 'src/common/utils/api-response';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { multerOptions } from 'src/common/config/multer.config';
+import { multerOptions, sanitizeFileName } from 'src/common/config/multer.config';
 import { GetUser } from 'src/modules/auth/decorators/get-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/types/auth-request.interface';
 import { UploadService } from '../upload/upload.service';
@@ -40,6 +41,7 @@ export class TodoController {
             result.meta
         );
     }
+
 
     @ApiOperation({ summary: 'Get a specific todo by ID' })
     @Get(':id')
@@ -83,13 +85,22 @@ export class TodoController {
     async createWithImage(
         @UploadedFile() file: Express.Multer.File,
         @Body() createTodoDto: CreateTodoDto,
-        @Request() req) {
-        if (file) {
-            (createTodoDto as any).image = file.filename;
+        @Request() req
+    ) {
+        if (!file) {
+            throw new BadRequestException('Image file is required');
         }
-        console.log(file);
 
-        this.uploadService.uploadFile(file.filename, file.buffer);
+        const uploadBody = file.buffer || fs.createReadStream(file.path);
+
+
+        const s3Url = await this.uploadService.uploadFile(
+            sanitizeFileName(file.originalname),
+            uploadBody,
+            file.mimetype
+        );
+
+        (createTodoDto as any).image = s3Url;
 
         const data = await this.todoService.create(createTodoDto, req.user);
 
