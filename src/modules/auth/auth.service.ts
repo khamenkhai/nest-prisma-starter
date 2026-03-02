@@ -4,14 +4,15 @@ import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { UserEntity } from '../users/entity/user.entity';
 import { JwtPayload } from 'src/modules/auth/types/jwt-payload';
-import { jwtConstants } from 'src/common/const/const';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
+    private configService: ConfigService
   ) { }
 
   async register(createUserDto: CreateUserDto): Promise<UserEntity> {
@@ -39,17 +40,32 @@ export class AuthService {
   }
 
   async login(user: UserEntity) {
-    // 1. Construct the payload using your interface
-    const payload: JwtPayload = {
-      email: user.email,
-      sub: user.id,
-      role: user.role
-    };
+    const accessTokenSecret = this.configService.get<string>('JWT_ACCESS_SECRET');
+    const refreshTokenSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+    
+    if (!accessTokenSecret || !refreshTokenSecret) {
+      throw new Error('JWT secrets are not configured');
+    }
 
-    // 2. Sign tokens using the typed payload
+    const accessTokenExpiresIn = this.configService.get<string>('JWT_ACCESS_EXPIRATION', '172800000');
+    const refreshTokenExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRATION', '604800000');
+
+    // Fix: Create proper JwtSignOptions objects
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(payload, { expiresIn: jwtConstants.accessTokenExpiresIn }),
-      this.jwtService.signAsync(payload, { expiresIn: jwtConstants.refreshTokenExpiresIn }),
+      this.jwtService.signAsync(
+        { sub: user.id, email: user.email, role: user.role },
+        { 
+          secret: accessTokenSecret,
+          expiresIn: accessTokenExpiresIn as any 
+        }
+      ),
+      this.jwtService.signAsync(
+        { sub: user.id },
+        { 
+          secret: refreshTokenSecret,
+          expiresIn: refreshTokenExpiresIn as any 
+        }
+      ),
     ]);
 
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
@@ -61,22 +77,38 @@ export class AuthService {
     };
   }
 
-  async refreshTokens(userId: string, refreshToken: string) {
-    const user = await this.usersService.findOne(userId);
-    if (!user || !user.refreshToken) {
-      throw new UnauthorizedException('Access denied');
-    }
+  //^^^^ there is still error to fix
+  async refreshTokens(refreshToken: string) {
+    try {
+      const refreshTokenSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+      
+      if (!refreshTokenSecret) {
+        throw new UnauthorizedException('Refresh token secret not configured');
+      }
 
-    const isRefreshTokenMatching = await bcrypt.compare(refreshToken, user.refreshToken);
-    if (!isRefreshTokenMatching) {
-      throw new UnauthorizedException('Access denied');
-    }
+      const payload = await this.jwtService.verifyAsync(refreshToken, {
+        secret: refreshTokenSecret,
+      });
 
-    // Pass the actual user entity to login to maintain types
-    return this.login(user);
+      const userId = payload.sub;
+      const user = await this.usersService.findOne(userId);
+      
+      if (!user || !user.refreshToken) {
+        throw new UnauthorizedException();
+      }
+
+      const isMatching = await bcrypt.compare(refreshToken, user.refreshToken);
+      if (!isMatching) {
+        throw new UnauthorizedException();
+      }
+
+      return this.login(user);
+    } catch (e) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 
   async logout(userId: string) {
-    return this.usersService.update(userId, { refreshToken: null as any });
+    return this.usersService.update(userId, { refreshToken: '' });
   }
 }

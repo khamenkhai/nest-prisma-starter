@@ -33,7 +33,7 @@ export class AuthController {
     @ApiOperation({ summary: 'Refresh access token' })
     @Post('refresh')
     async refresh(@Body() refreshDto: RefreshDto) {
-        const response = await this.authService.refreshTokens(refreshDto.userId, refreshDto.refreshToken);
+        const response = await this.authService.refreshTokens(refreshDto.refreshToken);
         return ApiResponse.success('Token successfully refreshed', response);
     }
 
