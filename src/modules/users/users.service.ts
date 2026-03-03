@@ -17,7 +17,10 @@ export class UsersService {
   }
 
   async findOne(id: string): Promise<UserEntity | null> {
-    return this.usersRepository.findOneBy({ id });
+    return this.usersRepository.findOne({
+      where: { id },
+      select: ['id', 'username', 'email', 'role', 'refreshToken']
+    });
   }
 
   async findOneByEmail(email: string): Promise<UserEntity | null> {
@@ -29,5 +32,9 @@ export class UsersService {
 
   async update(id: string, updateUserDto: Partial<UserEntity>): Promise<void> {
     await this.usersRepository.update(id, updateUserDto);
+  }
+
+  async updateRefreshToken(refreshToken: string, id: string): Promise<void> {
+    await this.usersRepository.update(id, { refreshToken: refreshToken })
   }
 }

@@ -22,18 +22,14 @@ export class AuthController {
     @ApiOperation({ summary: 'Login user' })
     @Post('login')
     async login(@Body() loginDto: LoginDto) {
-        const user = await this.authService.validateUser(loginDto.email, loginDto.password);
-        if (!user) {
-            return { message: 'Invalid credentials' };
-        }
-        const response = await this.authService.login(user);
-        return ApiResponse.success('User successfully registered', response);
+        const response = await this.authService.login(loginDto.email, loginDto.password);
+        return ApiResponse.success('User successfully logged in', response);
     }
 
     @ApiOperation({ summary: 'Refresh access token' })
     @Post('refresh')
     async refresh(@Body() refreshDto: RefreshDto) {
-        const response = await this.authService.refreshTokens(refreshDto.userId, refreshDto.refreshToken);
+        const response = await this.authService.refreshNewTokens(refreshDto.refreshToken);
         return ApiResponse.success('Token successfully refreshed', response);
     }
 

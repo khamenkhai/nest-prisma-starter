@@ -36,7 +36,7 @@ export class UserEntity {
   @Column({ length: 255, select: false, nullable: true })
   password?: string;
 
-  @Column({ length: 255, nullable: true, select: false })
+  @Column({ nullable: true, select: false })
   refreshToken?: string;
 
   @CreateDateColumn()
