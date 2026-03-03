@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Version, UseInterceptors, UploadedFile, ParseFilePipe, FileTypeValidator, MaxFileSizeValidator, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Version, UseInterceptors, UploadedFile, ParseFilePipe, FileTypeValidator, MaxFileSizeValidator, BadRequestException, Query } from '@nestjs/common';
 import * as fs from 'fs';
 import { ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { TodoService } from './todo.service';
@@ -15,6 +15,7 @@ import { multerOptions, sanitizeFileName } from 'src/common/config/multer.config
 import { GetUser } from 'src/modules/auth/decorators/get-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/types/auth-request.interface';
 import { UploadService } from '../upload/upload.service';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 @ApiTags('Todo')
 @ApiBearerAuth()
@@ -30,18 +31,21 @@ export class TodoController {
         const data = await this.todoService.create(createTodoDto, req.user);
         return ApiResponse.success('Todo created successfully', data);
     }
-
-    @ApiOperation({ summary: 'Get all todos for the current user' })
-    @Get()
-    async findAll(@GetUser() user: AuthenticatedUser) {
-        const result = await this.todoService.findAll(user.id);
-        return ApiResponse.success(
-            'Todos retrieved successfully',
-            result.items || result,
-            result.meta
-        );
-    }
-
+@ApiOperation({ summary: 'Get all todos for the current user' })
+@Get()
+async findAll(
+    @GetUser() user: AuthenticatedUser,
+    @Query() paginationDto: PaginationDto 
+) {
+    const { page, limit } = paginationDto;
+    const result = await this.todoService.findAll(user.id, page, limit);
+    
+    return ApiResponse.success(
+        'Todos retrieved successfully',
+        result.items,
+        result.meta
+    );
+}
 
     @ApiOperation({ summary: 'Get a specific todo by ID' })
     @Get(':id')
