@@ -1,9 +1,11 @@
+import { RoleEntity } from 'src/modules/roles/entity/roles.entity';
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
 } from 'typeorm';
 
 export enum UserRole {
@@ -23,12 +25,15 @@ export class UserEntity {
   @Column({ length: 150, unique: true })
   email: string;
 
-  @Column({
-    type: 'enum',
-    enum: UserRole,
-    default: UserRole.USER,
-  })
-  role: UserRole;
+  // @Column({
+  //   type: 'enum',
+  //   enum: UserRole,
+  //   default: UserRole.USER,
+  // })
+  // role: UserRole;
+
+  @ManyToOne(() => RoleEntity, { eager: true })
+  role: RoleEntity;
 
   @Column({ default: false })
   is_deleted: boolean;
