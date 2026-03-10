@@ -14,6 +14,8 @@ import { HttpLoggerMiddleware } from './common/logger/http-logger.middleware';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { UploadModule } from './modules/upload/upload.module';
+import { RolesModule } from './modules/roles/roles.module';
+import { SeederModule } from './database/seeders/seeder.module';
 
 @Module({
   imports: [
@@ -54,6 +56,8 @@ import { UploadModule } from './modules/upload/upload.module';
     UsersModule,
     TodoModule,
     UploadModule,
+    RolesModule,
+    SeederModule
   ],
   providers: [
     {

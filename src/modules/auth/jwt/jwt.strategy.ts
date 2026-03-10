@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-      private configService: ConfigService,
+    private configService: ConfigService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -17,11 +17,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
+  // This validates the token signature first, then calls this method with the payload
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
+    // Since the payload now contains the permissions assigned during Login/Refresh,
+    // we simply map them to the return object.
+    // The data is TRUSTED because it was signed by our server.
+
     return {
       id: payload.sub,
       email: payload.email,
-      role: payload.role,
+      roleId: payload.roleId,
+      roleName: payload.roleName,
+      permissions: payload.permissions,
     };
   }
 }
