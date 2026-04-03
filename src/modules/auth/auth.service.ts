@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
@@ -16,35 +20,41 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
-    @InjectRepository(RoleEntity) private roleRepository: Repository<RoleEntity>
-  ) { }
+    @InjectRepository(RoleEntity)
+    private roleRepository: Repository<RoleEntity>,
+  ) {}
 
   async register(createUserDto: CreateUserDto): Promise<UserEntity> {
-    const existingUser = await this.usersService.findOneByEmail(createUserDto.email);
+    const existingUser = await this.usersService.findOneByEmail(
+      createUserDto.email,
+    );
     if (existingUser) {
       throw new BadRequestException('User already exists');
     }
 
-    const role = await this.roleRepository.findOne({ where: { id: createUserDto.roleId } });
-    if (!role) {
-      throw new BadRequestException('Invalid role ID');
+    if (createUserDto.roleId) {
+      const role = await this.roleRepository.findOne({
+        where: { id: createUserDto.roleId },
+      });
+      if (!role) {
+        throw new BadRequestException('Invalid role ID');
+      }
     }
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    
+
     return this.usersService.create({
       email: createUserDto.email,
       username: createUserDto.username,
       roleId: createUserDto.roleId,
       password: hashedPassword,
-      
     });
   }
 
   // Helper to build payload with fresh permissions
   private async buildJwtPayload(user: UserEntity): Promise<JwtPayload> {
-
-    const permissions = user.role?.rolePermissions?.map(rp => rp.permission.name) || [];
+    const permissions =
+      user.role?.rolePermissions?.map((rp) => rp.permission.name) || [];
 
     return {
       sub: user.id,
@@ -56,7 +66,6 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-
     const user = await this.usersService.findOneByEmail(email);
 
     if (!user || !user.password) {
@@ -68,8 +77,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const accessTokenSecret = this.configService.get<string>('JWT_ACCESS_SECRET');
-    const refreshTokenSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
+    const accessTokenSecret =
+      this.configService.get<string>('JWT_ACCESS_SECRET');
+    const refreshTokenSecret =
+      this.configService.get<string>('JWT_REFRESH_SECRET');
 
     if (!accessTokenSecret || !refreshTokenSecret) {
       throw new Error('JWT secrets are not configured');
@@ -83,14 +94,14 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: accessTokenSecret,
-        expiresIn: this.configService.get('JWT_ACCESS_EXPIRATION', '15m') // e.g., 15 minutes
+        expiresIn: this.configService.get('JWT_ACCESS_EXPIRATION', '15m'), // e.g., 15 minutes
       }),
       this.jwtService.signAsync(
         { sub: user.id },
         {
           secret: refreshTokenSecret,
-          expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION', '7d')
-        }
+          expiresIn: this.configService.get('JWT_REFRESH_EXPIRATION', '7d'),
+        },
       ),
     ]);
 
@@ -105,24 +116,29 @@ export class AuthService {
         id: user.id,
         email: user.email,
         role: user.role,
-      }
+      },
     };
   }
 
   async refreshNewTokens(refreshToken: string) {
     try {
-      const refreshTokenSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
-      if (!refreshTokenSecret) throw new UnauthorizedException('Refresh token secret not configured');
+      const refreshTokenSecret =
+        this.configService.get<string>('JWT_REFRESH_SECRET');
+      if (!refreshTokenSecret)
+        throw new UnauthorizedException('Refresh token secret not configured');
 
       // 1. Verify Refresh Token Integrity
-      const payload = await this.jwtService.verifyAsync<{ sub: string }>(refreshToken, {
-        secret: refreshTokenSecret,
-      });
+      const payload = await this.jwtService.verifyAsync<{ sub: string }>(
+        refreshToken,
+        {
+          secret: refreshTokenSecret,
+        },
+      );
 
       const userId = payload.sub;
 
       // 2. Fetch User FRESH from DB (Do not trust old token data)
-      // This is where the "Dynamic" update happens. 
+      // This is where the "Dynamic" update happens.
       // We fetch the user and their NEW permissions.
       const user = await this.usersService.findOne(userId);
 
@@ -137,30 +153,34 @@ export class AuthService {
       }
 
       // 4. Generate NEW Access Token with FRESH Permissions
-      const accessTokenSecret = this.configService.get<string>('JWT_ACCESS_SECRET');
-      if (!accessTokenSecret) throw new Error('JWT access secret is not configured');
+      const accessTokenSecret =
+        this.configService.get<string>('JWT_ACCESS_SECRET');
+      if (!accessTokenSecret)
+        throw new Error('JWT access secret is not configured');
 
       const newPayload = await this.buildJwtPayload(user);
 
       const newAccessToken = await this.jwtService.signAsync(newPayload, {
         secret: accessTokenSecret,
-        expiresIn: this.configService.get('JWT_ACCESS_EXPIRATION', '15m') // Keep short
+        expiresIn: this.configService.get('JWT_ACCESS_EXPIRATION', '15m'), // Keep short
       });
 
       // 5. (Optional but recommended) Rotate Refresh Token
       const newRefreshToken = await this.jwtService.signAsync(
         { sub: user.id },
-        { secret: refreshTokenSecret, expiresIn: '7d' }
+        { secret: refreshTokenSecret, expiresIn: '7d' },
       );
 
       const hashedNewRefreshToken = await bcrypt.hash(newRefreshToken, 10);
-      await this.usersService.updateRefreshToken(hashedNewRefreshToken, user.id);
+      await this.usersService.updateRefreshToken(
+        hashedNewRefreshToken,
+        user.id,
+      );
 
       return {
         access_token: newAccessToken,
-        refresh_token: newRefreshToken
+        refresh_token: newRefreshToken,
       };
-
     } catch (e) {
       throw new UnauthorizedException('Invalid refresh token');
     }

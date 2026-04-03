@@ -11,12 +11,11 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    bufferLogs: true, // Buffer logs until Winston is ready
+    bufferLogs: true,
   });
 
   // --- Logger ---
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
-
 
   // --- Static Assets ---
   app.useStaticAssets(path.join(process.cwd(), 'public'));
@@ -64,7 +63,7 @@ async function bootstrap() {
     app.use(
       '/reference',
       apiReference({
-        content: document
+        content: document,
       }),
     );
   }

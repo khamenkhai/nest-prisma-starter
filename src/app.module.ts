@@ -1,6 +1,4 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { dataSourceOption } from './database/data-source';
@@ -8,7 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { TodoModule } from './modules/todo/todo.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { LoggerModule } from './common/logger/logger.module';
 import { HttpLoggerMiddleware } from './common/logger/http-logger.middleware';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -16,6 +14,7 @@ import { join } from 'path';
 import { UploadModule } from './modules/upload/upload.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { SeederModule } from './database/seeders/seeder.module';
+import { ApiResponseInterceptor } from './common/interceptor/api-response.interceptor';
 
 @Module({
   imports: [
@@ -35,16 +34,16 @@ import { SeederModule } from './database/seeders/seeder.module';
       throttlers: [
         {
           name: 'short', // Prevents rapid-fire botting
-          ttl: 1000,     // 1 second
+          ttl: 1000, // 1 second
           limit: 3,
         },
         {
           name: 'medium', // Standard browsing speed
-          ttl: 60000,    // 1 minute
+          ttl: 60000, // 1 minute
           limit: 60,
         },
         {
-          name: 'long',   // Overall daily safety net
+          name: 'long', // Overall daily safety net
           ttl: 86400000, // 1 day
           limit: 2000,
         },
@@ -57,7 +56,7 @@ import { SeederModule } from './database/seeders/seeder.module';
     TodoModule,
     UploadModule,
     RolesModule,
-    SeederModule
+    SeederModule,
   ],
   providers: [
     {
@@ -65,10 +64,13 @@ import { SeederModule } from './database/seeders/seeder.module';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
-    AppService
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ApiResponseInterceptor,
+    },
   ],
-  controllers: [AppController],
 
+  controllers: [],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
