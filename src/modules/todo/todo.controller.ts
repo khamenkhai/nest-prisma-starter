@@ -8,13 +8,8 @@ import {
   Delete,
   UseGuards,
   Request,
-  Version,
   UseInterceptors,
   UploadedFile,
-  ParseFilePipe,
-  FileTypeValidator,
-  MaxFileSizeValidator,
-  BadRequestException,
   Query,
 } from '@nestjs/common';
 import * as fs from 'fs';
@@ -53,10 +48,10 @@ export class TodoController {
   @ApiOperation({ summary: 'Create a new todo' })
   @Post()
   @RequirePermissions({
-      module: StaticModules.TODO,
-      action: ActivityAction.CREATE,
+    module: StaticModules.TODO,
+    action: ActivityAction.CREATE,
   })
-  @ResponseMessage("Created Todo Successfully!")
+  @ResponseMessage('Created Todo Successfully!')
   async create(@Body() createTodoDto: CreateTodoDto, @Request() req) {
     const data = await this.todoService.create(createTodoDto, req.user);
     return data;
@@ -65,10 +60,10 @@ export class TodoController {
   @ApiOperation({ summary: 'Get all todos for the current user' })
   @Get()
   @RequirePermissions({
-      module: StaticModules.TODO,
-      action: ActivityAction.READ,
+    module: StaticModules.TODO,
+    action: ActivityAction.READ,
   })
-  @ResponseMessage("Fetched All Todos Successfully")
+  @ResponseMessage('Fetched All Todos Successfully')
   async findAll(
     @GetUser() user: AuthenticatedUser,
     @Query() paginationDto: PaginationDto,
@@ -85,7 +80,7 @@ export class TodoController {
     module: StaticModules.TODO,
     action: ActivityAction.READ,
   })
-  @ResponseMessage("Fetched Todo Details Successfully")
+  @ResponseMessage('Fetched Todo Details Successfully')
   async findOne(@Param('id') id: string, @Request() req) {
     const data = await this.todoService.findOne(id, req.user.id);
     return data;
@@ -97,7 +92,7 @@ export class TodoController {
     module: StaticModules.TODO,
     action: ActivityAction.UPDATE,
   })
-  @ResponseMessage("Updated Todo Successfully")
+  @ResponseMessage('Updated Todo Successfully')
   async update(
     @Param('id') id: string,
     @Body() updateTodoDto: UpdateTodoDto,
@@ -113,14 +108,14 @@ export class TodoController {
     module: StaticModules.TODO,
     action: ActivityAction.DELETE,
   })
-  @ResponseMessage("Deleted Todo Successfully")
+  @ResponseMessage('Deleted Todo Successfully')
   async remove(@Param('id') id: string, @Request() req) {
     const data = await this.todoService.remove(id, req.user.id);
     return data;
   }
 
   @ApiOperation({
-    summary: 'Create a new todo with an image (multipart/form-data)',
+    summary: 'Create todo with an image (form-data)',
   })
   @ApiConsumes('multipart/form-data')
   @RequirePermissions({
@@ -131,38 +126,52 @@ export class TodoController {
     schema: {
       type: 'object',
       properties: {
-        title: { type: 'string' },
-        description: { type: 'string' },
-        isCompleted: { type: 'boolean' },
-        image: { type: 'string', format: 'binary' },
+        title: {
+          type: 'string',
+          example: 'Summer Vacation 2026',
+        },
+        description: {
+          type: 'string',
+          example: 'A collection of photos from the trip to Italy.',
+        },
+        image: {
+          type: 'string',
+          format: 'binary',
+          description: 'Upload the image file here',
+        },
       },
       required: ['title'],
     },
   })
   @Post('with-image')
   @UseInterceptors(FileInterceptor('image', multerOptions))
-  @ResponseMessage("Created Todo with Image Successfully")
+  @ResponseMessage('Created Todo with Image Successfully')
   async createWithImage(
     @UploadedFile() file: Express.Multer.File,
     @Body() createTodoDto: CreateTodoDto,
     @Request() req,
   ) {
-    if (!file) {
-      throw new BadRequestException('Image file is required');
+    let key: string = '';
+
+    if (file) {
+      const uploadBody = file.buffer || fs.createReadStream(file.path);
+
+      const uploadResult = await this.uploadService.uploadFile(
+        sanitizeFileName(file.originalname),
+        uploadBody,
+        file.mimetype,
+      );
+      key = uploadResult.key;
     }
 
-    const uploadBody = file.buffer || fs.createReadStream(file.path);
+    (createTodoDto as any).image = key;
 
-    const s3Url = await this.uploadService.uploadFile(
-      sanitizeFileName(file.originalname),
-      uploadBody,
-      file.mimetype,
-    );
+    const todo = await this.todoService.create(createTodoDto, req.user);
 
-    (createTodoDto as any).image = s3Url;
+    if (todo.image) {
+      todo.image = await this.uploadService.getPresignedUrl(todo.image);
+    }
 
-    const data = await this.todoService.create(createTodoDto, req.user);
-
-    return data;
+    return todo;
   }
 }

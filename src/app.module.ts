@@ -6,7 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 import { TodoModule } from './modules/todo/todo.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
-import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { LoggerModule } from './common/logger/logger.module';
 import { HttpLoggerMiddleware } from './common/logger/http-logger.middleware';
 import { ServeStaticModule } from '@nestjs/serve-static';
@@ -15,6 +15,7 @@ import { UploadModule } from './modules/upload/upload.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { SeederModule } from './database/seeders/seeder.module';
 import { ApiResponseInterceptor } from './common/interceptor/api-response.interceptor';
+import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup';
 
 @Module({
   imports: [
@@ -67,6 +68,10 @@ import { ApiResponseInterceptor } from './common/interceptor/api-response.interc
     {
       provide: APP_INTERCEPTOR,
       useClass: ApiResponseInterceptor,
+    },
+    {
+      provide: APP_FILTER,
+      useClass: SentryGlobalFilter,
     },
   ],
 

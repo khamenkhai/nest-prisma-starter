@@ -64,8 +64,6 @@ export class RolesController {
     return {};
   }
 
-  // --- PERMISSION ENDPOINTS ---
-
   @ApiOperation({ summary: 'Create a standalone permission' })
   @Post('permissions')
   @ResponseMessage('Permission created successfully')
@@ -79,8 +77,6 @@ export class RolesController {
   async findAllPermissions() {
     return await this.rolesService.findAllPermissions();
   }
-
-  // --- ASSIGNMENT ENDPOINTS ---
 
   @ApiOperation({ summary: 'Remove a specific permission from a role' })
   @Delete(':roleId/permissions/:permissionId')

@@ -25,13 +25,6 @@ export class UserEntity {
   @Column({ length: 150, unique: true })
   email: string;
 
-  // @Column({
-  //   type: 'enum',
-  //   enum: UserRole,
-  //   default: UserRole.USER,
-  // })
-  // role: UserRole;
-
   @ManyToOne(() => RoleEntity, { eager: true })
   role: RoleEntity;
 

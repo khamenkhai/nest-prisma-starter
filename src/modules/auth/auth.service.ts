@@ -86,15 +86,12 @@ export class AuthService {
       throw new Error('JWT secrets are not configured');
     }
 
-    // 2. Build Payload with fresh permissions
     const payload = await this.buildJwtPayload(user);
 
-    // 3. Generate Tokens
-    // SHORT EXPIRATION FOR ACCESS TOKEN (Balanced Approach)
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
         secret: accessTokenSecret,
-        expiresIn: this.configService.get('JWT_ACCESS_EXPIRATION', '15m'), // e.g., 15 minutes
+        expiresIn: this.configService.get('JWT_ACCESS_EXPIRATION', '15m'),
       }),
       this.jwtService.signAsync(
         { sub: user.id },
@@ -105,7 +102,6 @@ export class AuthService {
       ),
     ]);
 
-    // 4. Store Refresh Token
     const hashedRefreshToken = await bcrypt.hash(refreshToken, 10);
     await this.usersService.updateRefreshToken(hashedRefreshToken, user.id);
 
@@ -127,7 +123,6 @@ export class AuthService {
       if (!refreshTokenSecret)
         throw new UnauthorizedException('Refresh token secret not configured');
 
-      // 1. Verify Refresh Token Integrity
       const payload = await this.jwtService.verifyAsync<{ sub: string }>(
         refreshToken,
         {
@@ -137,22 +132,17 @@ export class AuthService {
 
       const userId = payload.sub;
 
-      // 2. Fetch User FRESH from DB (Do not trust old token data)
-      // This is where the "Dynamic" update happens.
-      // We fetch the user and their NEW permissions.
       const user = await this.usersService.findOne(userId);
 
       if (!user || !user.refreshToken) {
         throw new UnauthorizedException('Access Denied');
       }
 
-      // 3. Verify Refresh Token matches DB (Replay protection)
       const isMatching = await bcrypt.compare(refreshToken, user.refreshToken);
       if (!isMatching) {
         throw new UnauthorizedException('Invalid Token');
       }
 
-      // 4. Generate NEW Access Token with FRESH Permissions
       const accessTokenSecret =
         this.configService.get<string>('JWT_ACCESS_SECRET');
       if (!accessTokenSecret)
@@ -162,10 +152,9 @@ export class AuthService {
 
       const newAccessToken = await this.jwtService.signAsync(newPayload, {
         secret: accessTokenSecret,
-        expiresIn: this.configService.get('JWT_ACCESS_EXPIRATION', '15m'), // Keep short
+        expiresIn: this.configService.get('JWT_ACCESS_EXPIRATION', '15m'),
       });
 
-      // 5. (Optional but recommended) Rotate Refresh Token
       const newRefreshToken = await this.jwtService.signAsync(
         { sub: user.id },
         { secret: refreshTokenSecret, expiresIn: '7d' },
