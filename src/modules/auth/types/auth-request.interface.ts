@@ -6,7 +6,6 @@ export class AuthenticatedUser {
   permissions: string[];
 }
 
-// Extend the standard Express Request
 export class RequestWithUser extends Request {
   user: AuthenticatedUser;
 }

@@ -1,4 +1,4 @@
-import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
@@ -6,18 +6,16 @@ import { ConfigService } from '@nestjs/config';
 import { Readable } from 'stream';
 
 @Injectable()
-export class UploadService {
+export class UploadS3Service {
   private readonly s3client: S3Client;
 
   constructor(private readonly configService: ConfigService) {
     this.s3client = new S3Client({
-      region: 'us-east-1',
-      endpoint: this.configService.getOrThrow('MINIO_ENDPOINT'),
+      region: this.configService.getOrThrow('AWS_S3_REGION'),
       credentials: {
-        accessKeyId: this.configService.getOrThrow('MINIO_ACCESS_KEY'),
-        secretAccessKey: this.configService.getOrThrow('MINIO_SECRET_KEY'),
+        accessKeyId: this.configService.getOrThrow('AWS_ACCESS_KEY_ID'),
+        secretAccessKey: this.configService.getOrThrow('AWS_SECRET_ACCESS_KEY'),
       },
-      forcePathStyle: true,
     });
   }
 
@@ -26,7 +24,7 @@ export class UploadService {
     file: Buffer | Uint8Array | Readable,
     contentType: string,
   ): Promise<{ key: string }> {
-    const bucket = this.configService.getOrThrow('MINIO_BUCKET');
+    const bucket = this.configService.getOrThrow('AWS_S3_BUCKET');
 
     const key = `${Date.now()}-${fileName}`;
 
@@ -46,7 +44,7 @@ export class UploadService {
   }
 
   async getPresignedUrl(key: string): Promise<string> {
-    const bucket = this.configService.getOrThrow('MINIO_BUCKET');
+    const bucket = this.configService.getOrThrow('AWS_S3_BUCKET');
 
     const command = new GetObjectCommand({
       Bucket: bucket,
