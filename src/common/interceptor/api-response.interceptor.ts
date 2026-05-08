@@ -1,3 +1,4 @@
+// src/common/interceptors/api-response.interceptor.ts
 import {
   CallHandler,
   ExecutionContext,
@@ -20,6 +21,22 @@ export class ApiResponseInterceptor<T> implements NestInterceptor<T> {
 
     return next.handle().pipe(
       map((data) => {
+        // Check if the response has pagination structure (items + meta)
+        if (
+          data &&
+          typeof data === 'object' &&
+          'items' in data &&
+          'meta' in data
+        ) {
+          return {
+            success: true,
+            message: responseMessage,
+            data: data.items,
+            meta: data.meta,
+          };
+        }
+
+        // For single entities, arrays without pagination, or other responses
         return {
           success: true,
           message: responseMessage,

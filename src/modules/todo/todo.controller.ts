@@ -1,3 +1,4 @@
+// src/modules/todo/todo.controller.ts
 import {
   Controller,
   Get,
@@ -12,7 +13,6 @@ import {
   UploadedFile,
   Query,
 } from '@nestjs/common';
-import * as fs from 'fs';
 import { ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { TodoService } from './todo.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -21,29 +21,24 @@ import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  multerOptions,
-  sanitizeFileName,
-} from 'src/common/config/multer.config';
+import { multerOptions } from 'src/common/config/multer.config';
 import { GetUser } from 'src/modules/auth/decorators/get-user.decorator';
 import { AuthenticatedUser } from 'src/modules/auth/types/auth-request.interface';
-import { UploadService } from '../upload/upload.service';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { PermissionsGuard } from '../auth/guards/permission.guard';
 import { RequirePermissions } from '../auth/decorators/permission.decorator';
 import { StaticModules } from 'src/common/const/modules.type';
 import { ActivityAction } from 'src/common/const/action.type';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
+import { TodoEntity } from './entity/todo.entity';
+import { PaginatedResponse } from 'src/common/interfaces/api-response.interface';
 
 @ApiTags('Todo')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
-@Controller('todo')
+@Controller('todos')
 export class TodoController {
-  constructor(
-    private readonly todoService: TodoService,
-    private readonly uploadService: UploadService,
-  ) {}
+  constructor(private readonly todoService: TodoService) {}
 
   @ApiOperation({ summary: 'Create a new todo' })
   @Post()
@@ -52,9 +47,11 @@ export class TodoController {
     action: ActivityAction.CREATE,
   })
   @ResponseMessage('Created Todo Successfully!')
-  async create(@Body() createTodoDto: CreateTodoDto, @Request() req) {
-    const data = await this.todoService.create(createTodoDto, req.user);
-    return data;
+  async create(
+    @Body() createTodoDto: CreateTodoDto,
+    @Request() req,
+  ): Promise<TodoEntity> {
+    return this.todoService.create(createTodoDto, req.user);
   }
 
   @ApiOperation({ summary: 'Get all todos for the current user' })
@@ -67,11 +64,9 @@ export class TodoController {
   async findAll(
     @GetUser() user: AuthenticatedUser,
     @Query() paginationDto: PaginationDto,
-  ) {
+  ): Promise<PaginatedResponse<TodoEntity>> {
     const { page, limit } = paginationDto;
-    const result = await this.todoService.findAll(user.id, page, limit);
-
-    return result;
+    return this.todoService.findAll(user.id, page, limit);
   }
 
   @ApiOperation({ summary: 'Get a specific todo by ID' })
@@ -81,9 +76,8 @@ export class TodoController {
     action: ActivityAction.READ,
   })
   @ResponseMessage('Fetched Todo Details Successfully')
-  async findOne(@Param('id') id: string, @Request() req) {
-    const data = await this.todoService.findOne(id, req.user.id);
-    return data;
+  async findOne(@Param('id') id: string, @Request() req): Promise<TodoEntity> {
+    return this.todoService.findOne(id, req.user.id);
   }
 
   @ApiOperation({ summary: 'Update a specific todo by ID' })
@@ -97,9 +91,8 @@ export class TodoController {
     @Param('id') id: string,
     @Body() updateTodoDto: UpdateTodoDto,
     @Request() req,
-  ) {
-    const data = await this.todoService.update(id, updateTodoDto, req.user.id);
-    return data;
+  ): Promise<TodoEntity> {
+    return this.todoService.update(id, updateTodoDto, req.user.id);
   }
 
   @ApiOperation({ summary: 'Delete a specific todo by ID' })
@@ -109,9 +102,8 @@ export class TodoController {
     action: ActivityAction.DELETE,
   })
   @ResponseMessage('Deleted Todo Successfully')
-  async remove(@Param('id') id: string, @Request() req) {
-    const data = await this.todoService.remove(id, req.user.id);
-    return data;
+  async remove(@Param('id') id: string, @Request() req): Promise<void> {
+    return this.todoService.remove(id, req.user.id);
   }
 
   @ApiOperation({
@@ -150,28 +142,7 @@ export class TodoController {
     @UploadedFile() file: Express.Multer.File,
     @Body() createTodoDto: CreateTodoDto,
     @Request() req,
-  ) {
-    let key: string = '';
-
-    if (file) {
-      const uploadBody = file.buffer || fs.createReadStream(file.path);
-
-      const uploadResult = await this.uploadService.uploadFile(
-        sanitizeFileName(file.originalname),
-        uploadBody,
-        file.mimetype,
-      );
-      key = uploadResult.key;
-    }
-
-    (createTodoDto as any).image = key;
-
-    const todo = await this.todoService.create(createTodoDto, req.user);
-
-    if (todo.image) {
-      todo.image = await this.uploadService.getPresignedUrl(todo.image);
-    }
-
-    return todo;
+  ): Promise<TodoEntity> {
+    return this.todoService.createWithImage(createTodoDto, req.user, file);
   }
 }

@@ -107,20 +107,6 @@ export class RolesService {
     return (result.affected ?? 0) > 0;
   }
 
-  async createPermission(dto: NestedPermissionDto): Promise<PermissionEntity> {
-    const existing = await this.permissionRepository.findOne({
-      where: { module: dto.module, action: dto.action },
-    });
-    if (existing) {
-      throw new ConflictException(
-        `Permission for module "${dto.module}" and action "${dto.action}" already exists.`,
-      );
-    }
-
-    const permission = this.permissionRepository.create(dto);
-    return await this.permissionRepository.save(permission);
-  }
-
   async findAllPermissions() {
     return await this.permissionRepository.find();
   }

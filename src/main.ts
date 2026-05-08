@@ -1,4 +1,3 @@
-import './common/utils/instrements';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -49,7 +48,6 @@ async function bootstrap() {
       .setTitle('API Documentation')
       .setDescription('The official API documentation for the POS system.')
       .setVersion('1.0')
-      .addTag('pos')
       .addBearerAuth()
       .build();
 

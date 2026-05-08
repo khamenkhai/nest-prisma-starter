@@ -15,7 +15,7 @@ import { RefreshDto } from './dto/refresh.dto';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
 
 @ApiTags('Auth')
-@Controller('auth')
+@Controller('')
 export class AuthController {
   constructor(private authService: AuthService) {}
 

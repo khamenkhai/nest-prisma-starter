@@ -24,7 +24,7 @@ import { ResponseMessage } from 'src/common/decorators/response-message.decorato
 
 @ApiTags('Roles & Permissions')
 @ApiBearerAuth()
-@Controller('roles')
+@Controller('')
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
@@ -62,13 +62,6 @@ export class RolesController {
   async deleteRole(@Param('id') id: string) {
     await this.rolesService.deleteRole(id);
     return {};
-  }
-
-  @ApiOperation({ summary: 'Create a standalone permission' })
-  @Post('permissions')
-  @ResponseMessage('Permission created successfully')
-  async createPermission(@Body() dto: NestedPermissionDto) {
-    return await this.rolesService.createPermission(dto);
   }
 
   @ApiOperation({ summary: 'Get all permissions available in the system' })
