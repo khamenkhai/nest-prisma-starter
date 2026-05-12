@@ -1,55 +1,71 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { UserEntity } from './entity/user.entity';
+import { PrismaService } from 'src/common/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
-import { RoleEntity } from '../roles/entity/roles.entity';
+import { User } from 'src/database/generated/prisma/client';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    @InjectRepository(UserEntity)
-    private usersRepository: Repository<UserEntity>,
-  ) { }
+  constructor(private prisma: PrismaService) {}
 
-  async create(dto: CreateUserDto): Promise<UserEntity> {
-    const user = this.usersRepository.create({
-      email : dto.email,
-      username : dto.username,
-      password : dto.password,
-      role: { id: dto.roleId } 
+  async create(dto: CreateUserDto): Promise<User> {
+    return this.prisma.user.create({
+      data: {
+        email: dto.email,
+        username: dto.username,
+        password: dto.password,
+        role: dto.roleId ? { connect: { id: dto.roleId } } : undefined,
+      },
+      include: {
+        role: true,
+      },
     });
-    return this.usersRepository.save(user);
   }
 
-  async findOne(id: string): Promise<UserEntity | null> {
-    return this.usersRepository.findOne({
+  async findOne(id: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
       where: { id },
-      select: ['id', 'username', 'email', 'role', 'refreshToken']
+      include: {
+        role: true,
+      },
     });
   }
 
-  async findOneByEmail(email: string): Promise<UserEntity | null> {
-    return this.usersRepository.findOne({
+  async findOneByEmail(email: string): Promise<User | null> {
+    return this.prisma.user.findUnique({
       where: { email },
-      select: ['id', 'email', 'password', 'role', 'refreshToken']
+      include: {
+        role: true,
+      },
     });
   }
 
-  async update(id: string, updateUserDto: Partial<UserEntity>): Promise<void> {
-    await this.usersRepository.update(id, updateUserDto);
+  async update(id: string, updateUserDto: Partial<User>): Promise<void> {
+    await this.prisma.user.update({
+      where: { id },
+      data: updateUserDto as any, // Cast to any to handle partial updates cleanly for now
+    });
   }
 
   async updateRefreshToken(refreshToken: string, id: string): Promise<void> {
-    await this.usersRepository.update(id, { refreshToken: refreshToken })
+    await this.prisma.user.update({
+      where: { id },
+      data: { refreshToken },
+    });
   }
 
-  async assignRole(userId: string, roleId: string): Promise<UserEntity> {
+  async assignRole(userId: string, roleId: string): Promise<User> {
     const user = await this.findOne(userId);
     if (!user) {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
-    user.role = { id: roleId } as RoleEntity;
-    return this.usersRepository.save(user);
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        role: { connect: { id: roleId } },
+      },
+      include: {
+        role: true,
+      },
+    });
   }
 }

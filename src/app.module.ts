@@ -6,14 +6,13 @@ import {
   APP_INTERCEPTOR,
 } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { SentryGlobalFilter } from '@sentry/nestjs/setup';
 import { join } from 'path';
 
 // Database & Common
-import { dataSourceOption } from './database/data-source';
+import { PrismaModule } from './common/prisma/prisma.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { HttpLoggerMiddleware } from './common/logger/http-logger.middleware';
 import { ApiResponseInterceptor } from './common/interceptor/api-response.interceptor';
@@ -52,7 +51,7 @@ import { SeederModule } from './database/seeders/seeder.module';
     }),
 
     /// TO CONNECT TO DATABASE
-    TypeOrmModule.forRoot(dataSourceOption),
+    PrismaModule,
 
     /// FEATURE MODULES
     AuthModule,

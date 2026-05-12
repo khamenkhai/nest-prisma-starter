@@ -1,25 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { RoleEntity } from '../../modules/roles/entity/roles.entity';
-import { PermissionEntity } from '../../modules/roles/entity/permission.entity';
-import { RolePermissionEntity } from '../../modules/roles/entity/role-permission.entity';
-import { UserEntity } from 'src/modules/users/entity/user.entity';
-import { ActivityAction } from '../../common/const/action.type';
-import { StaticModules } from '../../common/const/modules.type';
+import { PrismaService } from 'src/common/prisma/prisma.service';
+import { ActivityAction, StaticModules } from 'src/database/generated/prisma/client';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthSeeder {
-  constructor(
-    @InjectRepository(RoleEntity)
-    private readonly roleRepository: Repository<RoleEntity>,
-    @InjectRepository(PermissionEntity)
-    private readonly permissionRepository: Repository<PermissionEntity>,
-    @InjectRepository(RolePermissionEntity)
-    private readonly rolePermissionRepository: Repository<RolePermissionEntity>,
-    @InjectRepository(UserEntity)
-    private readonly userRepository: Repository<UserEntity>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async seed() {
     console.log('🌱 Seeding Super Admin, Roles, and Permissions...');
@@ -27,69 +13,77 @@ export class AuthSeeder {
     // 1. Create all permissions for all modules and actions
     const allModules = Object.values(StaticModules);
     const allActions = Object.values(ActivityAction);
-    const permissions: PermissionEntity[] = [];
+    const permissions: any[] = [];
 
     for (const module of allModules) {
       for (const action of allActions) {
-        let permission = await this.permissionRepository.findOne({ 
-          where: { module, action } 
+        let permission = await this.prisma.permission.findUnique({
+          where: {
+            module_action: { module, action },
+          },
         });
 
         if (!permission) {
-          permission = this.permissionRepository.create({ module, action });
-          permission = await this.permissionRepository.save(permission);
+          permission = await this.prisma.permission.create({
+            data: { module, action },
+          });
         }
         permissions.push(permission);
       }
     }
 
-    let superAdminRole = await this.roleRepository.findOne({ 
-      where: { name: 'superadmin' } 
+    // 2. Create Super Admin Role
+    let superAdminRole = await this.prisma.role.findUnique({
+      where: { name: 'superadmin' },
     });
 
     if (!superAdminRole) {
-      superAdminRole = this.roleRepository.create({ 
-        name: 'superadmin',
+      superAdminRole = await this.prisma.role.create({
+        data: { name: 'superadmin' },
       });
-      superAdminRole = await this.roleRepository.save(superAdminRole);
     }
 
     // 3. Create role-permissions (link permissions to the role)
     for (const permission of permissions) {
-      const exists = await this.rolePermissionRepository.findOne({ 
-        where: { 
-          role: { id: superAdminRole.id }, 
-          permission: { id: permission.id } 
-        } 
+      const exists = await this.prisma.rolePermission.findFirst({
+        where: {
+          roleId: superAdminRole.id,
+          permissionId: permission.id,
+        },
       });
 
       if (!exists) {
-        const rp = this.rolePermissionRepository.create({ 
-          role: superAdminRole, 
-          permission 
+        await this.prisma.rolePermission.create({
+          data: {
+            roleId: superAdminRole.id,
+            permissionId: permission.id,
+          },
         });
-        await this.rolePermissionRepository.save(rp);
       }
     }
 
-    // 4. (Optional) Create a Super Admin User if one doesn't exist
-    await this.createDefaultAdminUser(superAdminRole);
+    // 4. Create a Super Admin User if one doesn't exist
+    await this.createDefaultAdminUser(superAdminRole.id);
 
     console.log('✅ Superadmin role and all permissions seeded!');
   }
 
-  private async createDefaultAdminUser(role: RoleEntity) {
+  private async createDefaultAdminUser(roleId: string) {
     const adminEmail = 'admin@example.com';
-    const existingUser = await this.userRepository.findOne({ where: { email: adminEmail } });
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: adminEmail },
+    });
 
     if (!existingUser) {
-      const user = this.userRepository.create({
-        email : adminEmail,
-        username : 'System Administrator',
-        password : 'Password123!',
-        role : role,
+      const hashedPassword = await bcrypt.hash('Password123!', 10);
+      await this.prisma.user.create({
+        data: {
+          email: adminEmail,
+          username: 'System Administrator',
+          password: hashedPassword,
+          roleId: roleId,
+        },
       });
-      await this.userRepository.save(user);
       console.log(`👤 Created default user: ${adminEmail}`);
     }
   }

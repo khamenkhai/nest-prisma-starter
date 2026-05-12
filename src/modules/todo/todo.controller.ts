@@ -30,8 +30,8 @@ import { RequirePermissions } from '../auth/decorators/permission.decorator';
 import { StaticModules } from 'src/common/const/modules.type';
 import { ActivityAction } from 'src/common/const/action.type';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
-import { TodoEntity } from './entity/todo.entity';
 import { PaginatedResponse } from 'src/common/interfaces/api-response.interface';
+import { Todo } from 'src/database/generated/prisma/client';
 
 @ApiTags('Todo')
 @ApiBearerAuth()
@@ -50,7 +50,7 @@ export class TodoController {
   async create(
     @Body() createTodoDto: CreateTodoDto,
     @Request() req,
-  ): Promise<TodoEntity> {
+  ): Promise<Todo> {
     return this.todoService.create(createTodoDto, req.user);
   }
 
@@ -64,7 +64,7 @@ export class TodoController {
   async findAll(
     @GetUser() user: AuthenticatedUser,
     @Query() paginationDto: PaginationDto,
-  ): Promise<PaginatedResponse<TodoEntity>> {
+  ): Promise<PaginatedResponse<Todo>> {
     const { page, limit } = paginationDto;
     return this.todoService.findAll(user.id, page, limit);
   }
@@ -76,7 +76,7 @@ export class TodoController {
     action: ActivityAction.READ,
   })
   @ResponseMessage('Fetched Todo Details Successfully')
-  async findOne(@Param('id') id: string, @Request() req): Promise<TodoEntity> {
+  async findOne(@Param('id') id: string, @Request() req): Promise<Todo> {
     return this.todoService.findOne(id, req.user.id);
   }
 
@@ -91,7 +91,7 @@ export class TodoController {
     @Param('id') id: string,
     @Body() updateTodoDto: UpdateTodoDto,
     @Request() req,
-  ): Promise<TodoEntity> {
+  ): Promise<Todo> {
     return this.todoService.update(id, updateTodoDto, req.user.id);
   }
 
@@ -142,7 +142,7 @@ export class TodoController {
     @UploadedFile() file: Express.Multer.File,
     @Body() createTodoDto: CreateTodoDto,
     @Request() req,
-  ): Promise<TodoEntity> {
+  ): Promise<Todo> {
     return this.todoService.createWithImage(createTodoDto, req.user, file);
   }
 }

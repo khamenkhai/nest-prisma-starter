@@ -1,7 +1,7 @@
 
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { UserRole } from 'src/modules/users/entity/user.entity';
+import { UserRole } from 'src/common/const/user-role.enum';
 import { ROLES_KEY } from '../decorators/roles.decorator';
 
 @Injectable()
@@ -17,7 +17,8 @@ export class RolesGuard implements CanActivate {
       return true;
     }
     const { user } = context.switchToHttp().getRequest();
-    const userRoles: UserRole[] = user?.roles ?? (user?.role ? [user.role] : []);
-    return requiredRoles.some((role) => userRoles.includes(role));
+    // Assuming Prisma user has a 'role' object with a 'name' field
+    const userRoleName = user?.role?.name;
+    return requiredRoles.some((role) => userRoleName === role);
   }
 }

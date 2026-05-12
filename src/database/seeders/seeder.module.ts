@@ -1,22 +1,14 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { AuthSeeder } from 'src/database/seeders/auth.seeder';
-import { RoleEntity } from 'src/modules/roles/entity/roles.entity';
-import { PermissionEntity } from 'src/modules/roles/entity/permission.entity';
-import { RolePermissionEntity } from 'src/modules/roles/entity/role-permission.entity';
-import { UserEntity } from 'src/modules/users/entity/user.entity';
-
-import dataSource, { dataSourceOption } from '../data-source';
+import { PrismaModule } from 'src/common/prisma/prisma.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot(dataSourceOption),
-    TypeOrmModule.forFeature([
-      RoleEntity,
-      PermissionEntity,
-      RolePermissionEntity,
-      UserEntity,
-    ]),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    PrismaModule,
   ],
   providers: [AuthSeeder],
   exports: [AuthSeeder],

@@ -6,13 +6,10 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
-import { UserEntity } from '../users/entity/user.entity';
 import { JwtPayload } from './types/jwt-payload';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { ConfigService } from '@nestjs/config';
-import { InjectRepository } from '@nestjs/typeorm';
-import { RoleEntity } from '../roles/entity/roles.entity';
-import { Repository } from 'typeorm';
+import { PrismaService } from 'src/common/prisma/prisma.service';
 
 @Injectable()
 export class AuthService {
@@ -20,11 +17,10 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
-    @InjectRepository(RoleEntity)
-    private roleRepository: Repository<RoleEntity>,
+    private prisma: PrismaService,
   ) {}
 
-  async register(createUserDto: CreateUserDto): Promise<UserEntity> {
+  async register(createUserDto: CreateUserDto) {
     const existingUser = await this.usersService.findOneByEmail(
       createUserDto.email,
     );
@@ -33,7 +29,7 @@ export class AuthService {
     }
 
     if (createUserDto.roleId) {
-      const role = await this.roleRepository.findOne({
+      const role = await this.prisma.role.findUnique({
         where: { id: createUserDto.roleId },
       });
       if (!role) {
@@ -52,9 +48,9 @@ export class AuthService {
   }
 
   // Helper to build payload with fresh permissions
-  private async buildJwtPayload(user: UserEntity): Promise<JwtPayload> {
+  private async buildJwtPayload(user: any): Promise<JwtPayload> {
     const permissions =
-      user.role?.rolePermissions?.map((rp) => rp.permission.name) || [];
+      user.role?.rolePermissions?.map((rp: any) => `${rp.permission.module}:${rp.permission.action}`) || [];
 
     return {
       sub: user.id,
@@ -66,7 +62,20 @@ export class AuthService {
   }
 
   async login(email: string, password: string) {
-    const user = await this.usersService.findOneByEmail(email);
+    const user = await this.prisma.user.findUnique({
+        where: { email },
+        include: {
+            role: {
+                include: {
+                    rolePermissions: {
+                        include: {
+                            permission: true
+                        }
+                    }
+                }
+            }
+        }
+    });
 
     if (!user || !user.password) {
       throw new UnauthorizedException('Invalid credentials');
@@ -132,7 +141,20 @@ export class AuthService {
 
       const userId = payload.sub;
 
-      const user = await this.usersService.findOne(userId);
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: {
+            role: {
+                include: {
+                    rolePermissions: {
+                        include: {
+                            permission: true
+                        }
+                    }
+                }
+            }
+        }
+      });
 
       if (!user || !user.refreshToken) {
         throw new UnauthorizedException('Access Denied');

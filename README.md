@@ -1,13 +1,13 @@
-# NestJS TypeORM Starter Template
+# NestJS Prisma Starter Template
 
-A production-ready [NestJS](https://github.com/nestjs/nest) starter template featuring TypeORM, PostgreSQL, JWT Authentication, Role-Based Access Control (RBAC), Winston Logging, Swagger/Scalar API Documentation, and full Docker integration.
+A production-ready [NestJS](https://github.com/nestjs/nest) starter template featuring Prisma, PostgreSQL, JWT Authentication, Role-Based Access Control (RBAC), Winston Logging, Swagger/Scalar API Documentation, and full Docker integration.
 
 ---
 
 ## 🚀 Features & Modules
 
-- **Core**: NestJS 11+, TypeScript 5+, TypeORM 0.3+.
-- **Database**: PostgreSQL with TypeORM migrations.
+- **Core**: NestJS 11+, TypeScript 5+, Prisma 0.3+.
+- **Database**: PostgreSQL with Prisma migrations.
 - **Security**:
   - JWT Authentication (Passport.js).
   - Role-Based Access Control (RBAC).
@@ -71,7 +71,7 @@ npm run start:dev
 ```text
 src/
 ├── common/             # Global modules (Logger, Middlewares)
-├── database/           # TypeORM config and Migrations
+├── database/           #
 ├── modules/            # Domain modules
 │   ├── auth/           # Login, JWT, Authentication logic
 │   ├── users/          # User management & Roles
@@ -118,12 +118,6 @@ docker exec -it nest-api npm run migration:revert
 | `GET`  | `/api/todo`          | List Todos       | JWT    |
 
 ---
-
-## 📚 Resources
-
-- [NestJS Documentation](https://docs.nestjs.com)
-- [TypeORM Documentation](https://typeorm.io)
-- [Postgres Documentation](https://www.postgresql.org/docs/)
 
 ---
 
