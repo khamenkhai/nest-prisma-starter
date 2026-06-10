@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/common/prisma/prisma.service';
-import { ActivityAction, StaticModules } from 'src/database/generated/prisma/client';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -10,26 +9,30 @@ export class AuthSeeder {
   async seed() {
     console.log('🌱 Seeding Super Admin, Roles, and Permissions...');
 
-    // 1. Create all permissions for all modules and actions
-    const allModules = Object.values(StaticModules);
-    const allActions = Object.values(ActivityAction);
+    // 1. Create all permissions
+    const permissionNames = [
+      'todo.create',
+      'todo.read',
+      'todo.update',
+      'todo.delete',
+      'user.create',
+      'user.read',
+      'user.update',
+      'user.delete',
+    ];
     const permissions: any[] = [];
 
-    for (const module of allModules) {
-      for (const action of allActions) {
-        let permission = await this.prisma.permission.findUnique({
-          where: {
-            module_action: { module, action },
-          },
-        });
+    for (const name of permissionNames) {
+      let permission = await this.prisma.permission.findUnique({
+        where: { name },
+      });
 
-        if (!permission) {
-          permission = await this.prisma.permission.create({
-            data: { module, action },
-          });
-        }
-        permissions.push(permission);
+      if (!permission) {
+        permission = await this.prisma.permission.create({
+          data: { name },
+        });
       }
+      permissions.push(permission);
     }
 
     // 2. Create Super Admin Role

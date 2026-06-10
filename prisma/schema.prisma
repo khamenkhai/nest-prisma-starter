@@ -5,35 +5,21 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider = "prisma-client"
   output   = "../src/database/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
 }
 
-enum StaticModules {
-  TODO @map("todo")
-
-  USER @map("user")
-}
-
-enum ActivityAction {
-  CREATE @map("create")
-  UPDATE @map("update")
-  DELETE @map("delete")
-  READ   @map("read")
-}
-
 model Permission {
   id          String           @id @default(uuid())
-  module      StaticModules
-  action      ActivityAction
+  name        String           @unique
   description String?
   roles       RolePermission[]
 
-  @@unique([module, action])
   @@map("permissions")
 }
 

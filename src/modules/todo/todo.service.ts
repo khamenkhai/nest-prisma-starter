@@ -16,10 +16,7 @@ export class TodoService {
     private readonly uploadService: UploadService,
   ) {}
 
-  async create(
-    createTodoDto: CreateTodoDto,
-    user: User,
-  ): Promise<Todo> {
+  async create(createTodoDto: CreateTodoDto, user: User): Promise<Todo> {
     return this.prisma.todo.create({
       data: {
         ...createTodoDto,
@@ -64,7 +61,7 @@ export class TodoService {
     limit: number = 10,
   ): Promise<PaginatedResponse<Todo>> {
     const skip = (page - 1) * limit;
-    
+
     const [items, totalItems] = await Promise.all([
       this.prisma.todo.findMany({
         where: { userId },
@@ -80,7 +77,9 @@ export class TodoService {
     const itemsWithUrls = await Promise.all(
       items.map(async (todo) => {
         if (todo.image) {
-          const presignedUrl = await this.uploadService.getPresignedUrl(todo.image);
+          const presignedUrl = await this.uploadService.getPresignedUrl(
+            todo.image,
+          );
           return { ...todo, image: presignedUrl };
         }
         return todo;

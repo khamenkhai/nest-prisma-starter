@@ -60,3 +60,5 @@ firebase_service_account.json
 public/uploads/
 
 /generated/prisma
+src/database/generated/
+src/database/generated/**/*

@@ -50,7 +50,7 @@ export class AuthService {
   // Helper to build payload with fresh permissions
   private async buildJwtPayload(user: any): Promise<JwtPayload> {
     const permissions =
-      user.role?.rolePermissions?.map((rp: any) => `${rp.permission.module}:${rp.permission.action}`) || [];
+      user.role?.rolePermissions?.map((rp: any) => rp.permission.name) || [];
 
     return {
       sub: user.id,
@@ -63,18 +63,18 @@ export class AuthService {
 
   async login(email: string, password: string) {
     const user = await this.prisma.user.findUnique({
-        where: { email },
-        include: {
-            role: {
-                include: {
-                    rolePermissions: {
-                        include: {
-                            permission: true
-                        }
-                    }
-                }
-            }
-        }
+      where: { email },
+      include: {
+        role: {
+          include: {
+            rolePermissions: {
+              include: {
+                permission: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!user || !user.password) {
@@ -144,16 +144,16 @@ export class AuthService {
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
         include: {
-            role: {
+          role: {
+            include: {
+              rolePermissions: {
                 include: {
-                    rolePermissions: {
-                        include: {
-                            permission: true
-                        }
-                    }
-                }
-            }
-        }
+                  permission: true,
+                },
+              },
+            },
+          },
+        },
       });
 
       if (!user || !user.refreshToken) {

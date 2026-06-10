@@ -1,9 +1,6 @@
-import { StaticModules } from 'src/common/const/modules.type';
-import { ActivityAction } from 'src/common/const/action.type';
 import { ApiProperty, PartialType } from '@nestjs/swagger';
 import {
   IsArray,
-  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -11,13 +8,10 @@ import {
 } from 'class-validator';
 
 export class NestedPermissionDto {
-  @ApiProperty({ enum: StaticModules })
-  @IsEnum(StaticModules)
-  module: StaticModules;
-
-  @ApiProperty({ enum: ActivityAction })
-  @IsEnum(ActivityAction)
-  action: ActivityAction;
+  @ApiProperty({ example: 'todo.create' })
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
 
   @ApiProperty({ required: false })
   @IsString()

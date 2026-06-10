@@ -27,8 +27,6 @@ import { AuthenticatedUser } from 'src/modules/auth/types/auth-request.interface
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { PermissionsGuard } from '../auth/guards/permission.guard';
 import { RequirePermissions } from '../auth/decorators/permission.decorator';
-import { StaticModules } from 'src/common/const/modules.type';
-import { ActivityAction } from 'src/common/const/action.type';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
 import { PaginatedResponse } from 'src/common/interfaces/api-response.interface';
 import { Todo } from 'src/database/generated/prisma/client';
@@ -42,10 +40,7 @@ export class TodoController {
 
   @ApiOperation({ summary: 'Create a new todo' })
   @Post()
-  @RequirePermissions({
-    module: StaticModules.TODO,
-    action: ActivityAction.CREATE,
-  })
+  // @RequirePermissions('todo.create')
   @ResponseMessage('Created Todo Successfully!')
   async create(
     @Body() createTodoDto: CreateTodoDto,
@@ -56,10 +51,7 @@ export class TodoController {
 
   @ApiOperation({ summary: 'Get all todos for the current user' })
   @Get()
-  @RequirePermissions({
-    module: StaticModules.TODO,
-    action: ActivityAction.READ,
-  })
+  // @RequirePermissions('todo.read')
   @ResponseMessage('Fetched All Todos Successfully')
   async findAll(
     @GetUser() user: AuthenticatedUser,
@@ -71,10 +63,7 @@ export class TodoController {
 
   @ApiOperation({ summary: 'Get a specific todo by ID' })
   @Get(':id')
-  @RequirePermissions({
-    module: StaticModules.TODO,
-    action: ActivityAction.READ,
-  })
+  @RequirePermissions('todo.read')
   @ResponseMessage('Fetched Todo Details Successfully')
   async findOne(@Param('id') id: string, @Request() req): Promise<Todo> {
     return this.todoService.findOne(id, req.user.id);
@@ -82,10 +71,7 @@ export class TodoController {
 
   @ApiOperation({ summary: 'Update a specific todo by ID' })
   @Patch(':id')
-  @RequirePermissions({
-    module: StaticModules.TODO,
-    action: ActivityAction.UPDATE,
-  })
+  @RequirePermissions('todo.update')
   @ResponseMessage('Updated Todo Successfully')
   async update(
     @Param('id') id: string,
@@ -97,10 +83,7 @@ export class TodoController {
 
   @ApiOperation({ summary: 'Delete a specific todo by ID' })
   @Delete(':id')
-  @RequirePermissions({
-    module: StaticModules.TODO,
-    action: ActivityAction.DELETE,
-  })
+  @RequirePermissions('todo.delete')
   @ResponseMessage('Deleted Todo Successfully')
   async remove(@Param('id') id: string, @Request() req): Promise<void> {
     return this.todoService.remove(id, req.user.id);
@@ -110,10 +93,7 @@ export class TodoController {
     summary: 'Create todo with an image (form-data)',
   })
   @ApiConsumes('multipart/form-data')
-  @RequirePermissions({
-    module: StaticModules.TODO,
-    action: ActivityAction.CREATE,
-  })
+  @RequirePermissions('todo.create')
   @ApiBody({
     schema: {
       type: 'object',

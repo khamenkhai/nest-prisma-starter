@@ -8,4 +8,4 @@ import { UploadModule } from '../upload/upload.module';
   controllers: [TodoController],
   providers: [TodoService],
 })
-export class TodoModule { }
+export class TodoModule {}

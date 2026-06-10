@@ -15,11 +15,7 @@ import {
   ApiParam,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import {
-  CreateRoleDto,
-  UpdateRoleDto,
-  NestedPermissionDto,
-} from './dto/roles.dto';
+import { CreateRoleDto, UpdateRoleDto } from './dto/roles.dto';
 import { ResponseMessage } from 'src/common/decorators/response-message.decorator';
 
 @ApiTags('Roles & Permissions')

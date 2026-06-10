@@ -28,10 +28,7 @@ export class UsersController {
   @Patch(':id/role')
   @ApiParam({ name: 'id', description: 'User ID' })
   @ResponseMessage('Role assigned successfully')
-  async assignRole(
-    @Param('id') userId: string,
-    @Body() dto: AssignRoleDto,
-  ) {
+  async assignRole(@Param('id') userId: string, @Body() dto: AssignRoleDto) {
     return await this.usersService.assignRole(userId, dto.roleId);
   }
 }
