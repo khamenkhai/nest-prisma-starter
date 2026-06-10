@@ -34,7 +34,7 @@ import { Todo } from 'src/database/generated/prisma/client';
 @ApiTags('Todo')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
-@Controller('todos')
+@Controller('')
 export class TodoController {
   constructor(private readonly todoService: TodoService) {}
 

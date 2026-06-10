@@ -23,7 +23,7 @@ export class CreateRoleDto {
   @ApiProperty({ example: 'Editor' })
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @ApiProperty({
     description: 'Array of existing Permission UUIDs',
