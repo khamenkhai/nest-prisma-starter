@@ -29,7 +29,7 @@ export class UploadService {
     // MinIO specific configuration
     if (this.isMinIO) {
       s3Config.endpoint = this.configService.getOrThrow('MINIO_ENDPOINT');
-      s3Config.forcePathStyle = true; 
+      s3Config.forcePathStyle = true;
 
       // You might want to set a default region or use 'us-east-1'
       if (!this.configService.get('AWS_S3_REGION')) {
@@ -80,7 +80,9 @@ export class UploadService {
     try {
       return await getSignedUrl(this.s3client, command, { expiresIn });
     } catch (error: any) {
-      this.logger.error(`Failed to generate presigned URL for ${key}: ${error.message}`);
+      this.logger.error(
+        `Failed to generate presigned URL for ${key}: ${error.message}`,
+      );
 
       // Fallback for MinIO: construct URL manually if presigned URL fails
       if (this.isMinIO) {
@@ -122,7 +124,9 @@ export class UploadService {
       });
 
       await this.s3client.send(command);
-      this.logger.log(`Successfully deleted file: ${key} from ${this.isMinIO ? 'MinIO' : 'S3'}`);
+      this.logger.log(
+        `Successfully deleted file: ${key} from ${this.isMinIO ? 'MinIO' : 'S3'}`,
+      );
     } catch (error: any) {
       this.logger.error(`Failed to delete file ${key}: ${error.message}`);
       throw error;
@@ -165,14 +169,16 @@ export class UploadService {
       await this.s3client.send(command);
       return true;
     } catch (error: any) {
-      if (error.name === 'NoSuchKey' || error.$metadata?.httpStatusCode === 404) {
+      if (
+        error.name === 'NoSuchKey' ||
+        error.$metadata?.httpStatusCode === 404
+      ) {
         return false;
       }
       throw error;
     }
   }
 
- 
   getStorageType(): string {
     return this.isMinIO ? 'minio' : 's3';
   }

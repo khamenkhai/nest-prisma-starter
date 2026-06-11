@@ -21,10 +21,10 @@ export class PaginationDto {
   @ApiPropertyOptional({
     description: 'Search query term',
     example: 'john_doe',
-    required: false
+    required: false,
   })
   @IsOptional()
   @IsString()
-  @Transform(({ value }) => typeof value === 'string' ? value.trim() : value)
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   search?: string;
 }
