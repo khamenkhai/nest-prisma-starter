@@ -1,4 +1,4 @@
-# Agent Guide for nest-typeorm-starter
+# Agent Guide for nest-prisma-starter
 
 ## Dev Commands
 
@@ -18,7 +18,7 @@
 
 ## Architecture
 
-- **NestJS 11** + **TypeORM 0.3** + **PostgreSQL**. Single app, not a monorepo.
+- **NestJS 11** + **prisma 0.3** + **PostgreSQL**. Single app, not a monorepo.
 - Entrypoint: `src/main.ts`. Root module: `src/app.module.ts`.
 - Global prefix: `/api`. Routes nested under `/v1` via `RouterModule`.
   - `POST /api/v1/auth/login` — login

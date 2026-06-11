@@ -19,7 +19,6 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CreateTodoDto } from './dto/create-todo.dto';
 import { UpdateTodoDto } from './dto/update-todo.dto';
-import { RolesGuard } from '../auth/guards/roles.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from 'src/common/config/multer.config';
 import { GetUser } from 'src/modules/auth/decorators/get-user.decorator';
@@ -33,7 +32,7 @@ import { Todo } from 'src/database/generated/prisma/client';
 
 @ApiTags('Todo')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('')
 export class TodoController {
   constructor(private readonly todoService: TodoService) {}
