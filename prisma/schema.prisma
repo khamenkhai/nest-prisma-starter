@@ -5,8 +5,8 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/database/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/database/generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -15,7 +15,7 @@ datasource db {
 }
 
 model Permission {
-  id          String           @id @default(uuid())
+  id          String           @id @default(uuid(7))
   name        String           @unique
   description String?
   roles       RolePermission[]
@@ -24,7 +24,7 @@ model Permission {
 }
 
 model Role {
-  id              String           @id @default(uuid())
+  id              String           @id @default(uuid(7))
   name            String           @unique
   rolePermissions RolePermission[]
   users           User[]
@@ -33,7 +33,7 @@ model Role {
 }
 
 model RolePermission {
-  id           String     @id @default(uuid())
+  id           String     @id @default(uuid(7))
   roleId       String     @map("role_id")
   permissionId String     @map("permission_id")
   role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
@@ -43,14 +43,14 @@ model RolePermission {
 }
 
 model User {
-  id           String   @id @default(uuid())
+  id           String   @id @default(uuid(7))
   username     String   @db.VarChar(100)
   email        String   @unique @db.VarChar(150)
   roleId       String?  @map("role_id")
   role         Role?    @relation(fields: [roleId], references: [id])
-  is_deleted   Boolean  @default(false)
+  isDeleted    Boolean  @default(false) @map("is_deleted")
   password     String?  @db.VarChar(255)
-  refreshToken String?
+  refreshToken String?  @map("refresh_token")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
   todos        Todo[]
@@ -59,7 +59,7 @@ model User {
 }
 
 model Todo {
-  id          String   @id @default(uuid())
+  id          String   @id @default(uuid(7))
   title       String   @db.VarChar(255)
   description String?  @db.Text
   isCompleted Boolean  @default(false) @map("is_completed")
